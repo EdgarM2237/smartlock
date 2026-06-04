@@ -2,6 +2,11 @@ datasource db {
   provider = "postgresql"
 }
 
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
 model Client {
   id           String    @id @default(uuid())
   name         String
@@ -14,6 +19,50 @@ model Client {
   devices      Device[]
   credentials  Credential[]
   apiKeys      ApiKey[]
+  zones   Zone[]
+  persons Person[]
+}
+
+// ─── ZONAS ──────────────────────────────────────────────────────────────────
+
+model Zone {
+  id          String   @id @default(uuid())
+  clientId    String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client      Client   @relation(fields: [clientId], references: [id])
+  devices     Device[]
+  persons     PersonZone[]
+}
+
+
+model Person {
+  id          String       @id @default(uuid())
+  clientId    String
+  name        String
+  role        String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  client      Client       @relation(fields: [clientId], references: [id])
+  credentials Credential[]
+  zones       PersonZone[]
+}
+
+
+model PersonZone {
+  personId  String
+  zoneId    String
+  createdAt DateTime @default(now())
+
+  person    Person   @relation(fields: [personId], references: [id])
+  zone      Zone     @relation(fields: [zoneId], references: [id])
+
+  @@id([personId, zoneId])
 }
 
 model Device {
@@ -35,6 +84,8 @@ model Device {
   credentials       Credential[]
   accessLogs        AccessLog[]
   syncLogs          SyncLog[]
+  zoneId  String?
+  zone    Zone?   @relation(fields: [zoneId], references: [id])
 }
 
 enum AccessMode {
@@ -62,6 +113,8 @@ model Credential {
   client           Client          @relation(fields: [clientId], references: [id])
   device           Device          @relation(fields: [deviceId], references: [id])
   accessLogs       AccessLog[]
+  personId  String?
+  person    Person? @relation(fields: [personId], references: [id])
 }
 
 enum CredentialType {
